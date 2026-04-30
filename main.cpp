@@ -141,8 +141,8 @@ const int num_symbolic_tokens=sizeof(symbolic_tokens)/sizeof(symbolic_tokens[0])
 
 void GetNextToken(CompilerInfo* pci, Token* ptoken) // Reads next token from a file
 {
-    ptoken->type=ERROR;
-    ptoken->ch  =0;
+    ptoken->type = ERROR;
+    ptoken->ch = 0;
 
     char s;
     while(true)   // skip whitespace and newlines
@@ -154,8 +154,8 @@ void GetNextToken(CompilerInfo* pci, Token* ptoken) // Reads next token from a f
 
     if(!s)
     {
-        ptoken->type=ENDFILE;
-        ptoken->ch  =0;
+        ptoken->type = ENDFILE;
+        ptoken->ch = 0;
         return;
     }
 
@@ -165,15 +165,15 @@ void GetNextToken(CompilerInfo* pci, Token* ptoken) // Reads next token from a f
         if(s==symbolic_tokens[i].ch)
         {
             ptoken->type = symbolic_tokens[i].type;
-            ptoken->ch   =s;
+            ptoken->ch = s;
             return;
         }
     }
 
     if(s>='a' && s<='z')
     {
-        ptoken->type=ID;
-        ptoken->ch  =s;
+        ptoken->type = ID;
+        ptoken->ch = s;
         return;
     }
 }
@@ -205,7 +205,7 @@ struct TreeNode
 {
     TreeNode* child[MAX_CHILDREN];
     NodeKind  node_kind;
-    char      id;   // variable name
+    char id;   // variable name
 
     TreeNode()
     {
@@ -229,8 +229,7 @@ void Match(CompilerInfo* pci, ParseInfo* ppi, TokenType expected_token_type) // 
         throw 0;
     GetNextToken(pci, &ppi->next_token);
 
-    fprintf(pci->debug_file.file, "%c (%s)\n",
-            ppi->next_token.ch, TokenTypeStr[ppi->next_token.type]);
+    fprintf(pci->debug_file.file, "%c (%s)\n",   ppi->next_token.ch, TokenTypeStr[ppi->next_token.type]);
     fflush(pci->debug_file.file);
 }
 
@@ -380,10 +379,14 @@ void DestroyTree(TreeNode* node)
 
 bool TreesEqual(TreeNode* a, TreeNode* b) // structural equality check
 {
-    if(!a && !b) return true;
-    if(!a || !b) return false;
-    if(a->node_kind!=b->node_kind) return false;
-    if(a->id!=b->id) return false;
+    if(!a && !b)
+        return true;
+    if(!a || !b)
+        return false;
+    if(a->node_kind!=b->node_kind)
+        return false;
+    if(a->id!=b->id)
+        return false;
     return TreesEqual(a->child[0], b->child[0]) && TreesEqual(a->child[1], b->child[1]);
 }
 
@@ -392,7 +395,8 @@ bool TreesEqual(TreeNode* a, TreeNode* b) // structural equality check
 
 void PrintTreeHelper(TreeNode* node, char* prefix, int is_root, OutFile* out)
 {
-    if(!node) return;
+    if(!node)
+        return;
 
     char line[256];
     line[0]='\0';
@@ -403,16 +407,25 @@ void PrintTreeHelper(TreeNode* node, char* prefix, int is_root, OutFile* out)
 
     switch(node->node_kind)
     {
-        case PRODUCT_NODE:  strcat(line, "product");                                             break;
-        case INVERSE_NODE:  strcat(line, "inverse");                                             break;
-        case ID_NODE:       { char tmp[2]; tmp[0]=node->id; tmp[1]='\0'; strcat(line, tmp); }   break;
-        case IDENTITY_NODE: strcat(line, "e");                                                   break;
+        case PRODUCT_NODE:
+            strcat(line, "product");
+        break;
+        case INVERSE_NODE:
+            strcat(line, "inverse");
+        break;
+        case ID_NODE:{
+            char tmp[2]; tmp[0]=node->id; tmp[1]='\0';
+             strcat(line, tmp);
+        }break;
+        case IDENTITY_NODE:
+        strcat(line, "e");
+        break;
     }
 
     printf("%s\n", line); fflush(NULL);
     if(out && out->file) { fprintf(out->file, "%s\n", line); fflush(out->file); }
 
-    int   prefix_len  = strlen(prefix);
+    int prefix_len = strlen(prefix);
     char* child_prefix=new char[prefix_len+10];
     strcpy(child_prefix, prefix);
 
@@ -441,13 +454,15 @@ void PrintTree(TreeNode* node, OutFile* out)
 // Returns true if node needs parentheses when used as child of a product
 bool NeedsParens(TreeNode* node)
 {
-    if(!node) return false;
+    if(!node)
+        return false;
     return node->node_kind==PRODUCT_NODE;
 }
 
 void TreeToExpr(TreeNode* node, char* buf) // writes expression string into buf
 {
-    if(!node) return;
+    if(!node)
+        return;
 
     switch(node->node_kind)
     {
@@ -670,7 +685,7 @@ bool ApplyOneRule(TreeNode* node, TreeNode** replacement)
 {
     if(!node) return false;
 
-    // --- try rules on THIS node first (top-down order) ---
+    // try rules on THIS node first (top-down order)
     bool dummy=false;
     TreeNode* result=0;
 
@@ -694,7 +709,7 @@ bool ApplyOneRule(TreeNode* node, TreeNode** replacement)
         return true;
     }
 
-    // --- no rule matched here; recurse into left child ---
+    // no rule matched here; recurse into left child
     TreeNode* child_replacement=0;
     if(ApplyOneRule(node->child[0], &child_replacement))
     {
@@ -706,7 +721,7 @@ bool ApplyOneRule(TreeNode* node, TreeNode** replacement)
         return true;
     }
 
-    // --- recurse into right child ---
+    // recurse into right child
     if(ApplyOneRule(node->child[1], &child_replacement))
     {
         if(child_replacement)
