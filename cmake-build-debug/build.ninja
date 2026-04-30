@@ -55,6 +55,12 @@ build CMakeFiles/TOC_ASS_2.dir/myfile.cpp.obj: CXX_COMPILER__TOC_ASS_2_unscanned
   OBJECT_DIR = CMakeFiles\TOC_ASS_2.dir
   OBJECT_FILE_DIR = CMakeFiles\TOC_ASS_2.dir
 
+build CMakeFiles/TOC_ASS_2.dir/main.cpp.obj: CXX_COMPILER__TOC_ASS_2_unscanned_Debug C$:/Users/user/Desktop/TOC_ASS-2/main.cpp || cmake_object_order_depends_target_TOC_ASS_2
+  DEP_FILE = CMakeFiles\TOC_ASS_2.dir\main.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\TOC_ASS_2.dir
+  OBJECT_FILE_DIR = CMakeFiles\TOC_ASS_2.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target TOC_ASS_2
@@ -63,7 +69,7 @@ build CMakeFiles/TOC_ASS_2.dir/myfile.cpp.obj: CXX_COMPILER__TOC_ASS_2_unscanned
 #############################################
 # Link the executable TOC_ASS_2.exe
 
-build TOC_ASS_2.exe: CXX_EXECUTABLE_LINKER__TOC_ASS_2_Debug CMakeFiles/TOC_ASS_2.dir/myfile.cpp.obj
+build TOC_ASS_2.exe: CXX_EXECUTABLE_LINKER__TOC_ASS_2_Debug CMakeFiles/TOC_ASS_2.dir/myfile.cpp.obj CMakeFiles/TOC_ASS_2.dir/main.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\TOC_ASS_2.dir

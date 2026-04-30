@@ -6,40 +6,40 @@
 // factor -> primary { '^' '-' '1' }
 // primary -> '(' expr ')' | 'e' | var
 // var -> 'a'..'z'
-// ---------------------------
+// --------------------------
 // Reduction Rules:
-// R1:  e.x->x
-// R2:  x.e->x
-// R3:  x^-1.x->e
-// R4:  x.x^-1->e
-// R5:  e^-1->e
-// R6:  x^-1^-1->x
-// R7:  y^-1.(y.z)->z
-// R8:  y.(y^-1.z)->z
-// R9:  (x.y).z->x.(y.z)
+// R1: e.x->x
+// R2: x.e->x
+// R3: x^-1.x->e
+// R4: x.x^-1->e
+// R5: e^-1->e
+// R6: x^-1^-1->x
+// R7: y^-1.(y.z)->z
+// R8: y.(y^-1.z)->z
+// R9: (x.y).z->x.(y.z)
 // R10: (x.y)^-1->y^-1.x^-1
-// -----------------------------
-// Test  1: ((x.y^-1).z)^-1
-// Test  2: x
-// Test  3: e
-// Test  4: ((x.y).(z.t))^-1
-// Test  5: x^-1^-1
-// Test  6: e.x
-// Test  7: ((x.y)^-1)^-1
-// Test  8: x^-1.x
-// Test  9: ((a.b).(c.(d.e^-1)))^-1
-// Test 10: a^-1.b^-1.(c.d^-1)^-1
-// Test 11: (x.y).z
-// Test 12: x.(y.z)
-// Test 13: (x.y)^-1
-// Test 14: (z^-1.y).x^-1
-// Test 15: z^-1.(x.y^-1)^-1
-// Test 16: x.y.z
-// Test 17: x^-1.y^-1.z^-1
-// Test 18: (((a.b).c).d)^-1
-// Test 19: a^-1^-1^-1
-// Test 20: z^-1.(y.x^-1)
 // -------------------------
+// Test 1: ((x.y^-1).z)^-1
+// 2: x
+// 3: x^-3
+// 4: ((x.y).(z.t))^-1
+// 5: x^-1^-1
+// 6: (x.y^-2)^-3
+// 7: ((x.y)^-1)^-1
+// 8: x^-1.x
+// 9: ((a.b).(c.(d.e^-1)))^-1
+// 10: a^-1.b^-1.(c.d^-1)^-1
+// 11: (x.y).z
+// 12: x.(y.z)
+// 13: (x.y)^-1
+// 14: (z^-1.y).x^-1
+// 15: z^-1.(x.y^-1)^-1
+// 16: x.y.z
+// 17: x^-1.y^-1.z^-1
+// 18: (((a.b).c).d)^-1
+// 19: a^-1^-1^-1
+// 20: z^-1.(y.x^-1)
+// ---------------------
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -91,7 +91,7 @@ struct Token
 const Token symbolic_tokens[]=
 {
     Token(ID,0),Token(IDENTITY,'e'),Token(DOT,'.'),
-    Token(CARET,'^'),Token(MINUS,'-'),Token(ONE,'1'),
+    Token(CARET,'^'),Token(MINUS,'-'),
     Token(LEFT_PAREN,'('),Token(RIGHT_PAREN,')')
 };
 const int num_symbolic_tokens=sizeof(symbolic_tokens)/sizeof(symbolic_tokens[0]);
@@ -109,7 +109,8 @@ void GetNextToken(CompilerInfo* pci,Token* ptoken)
     {
         if(s==symbolic_tokens[i].ch){ptoken->type=symbolic_tokens[i].type;ptoken->ch=s;return;}
     }
-    if(s>='a'&&s<='z'){ptoken->type=ID;ptoken->ch  =s;return;}
+    if(s>='1'&&s<='9'){ptoken->type=ONE;ptoken->ch=s;return;}
+    if(s>='a'&&s<='z'){ptoken->type=ID;ptoken->ch=s;return;}
 }
 enum NodeKind
 {
@@ -164,19 +165,24 @@ TreeNode* Primary(CompilerInfo* pci,ParseInfo* ppi)
     }
     throw 0;
 }
-TreeNode* Factor(CompilerInfo* pci,ParseInfo* ppi)
+TreeNode* Factor(CompilerInfo* pci, ParseInfo* ppi)
 {
     pci->debug_file.Out("Start Factor");
     TreeNode* tree=Primary(pci, ppi);
     while(ppi->next_token.type==CARET)
     {
-        Match(pci,ppi,CARET);Match(pci,ppi,MINUS);Match(pci,ppi,ONE);
-        TreeNode* new_tree=new TreeNode;
-        new_tree->node_kind=INVERSE_NODE;
-        new_tree->child[0] =tree;
-        tree=new_tree;
+        Match(pci,ppi,CARET);
+        Match(pci,ppi,MINUS);
+        if(ppi->next_token.type!=ONE)throw 0;
+        int n=ppi->next_token.ch-'0';
+        GetNextToken(pci,&ppi->next_token);
+        for(int i=0;i<n;i++)
+        {
+            TreeNode* new_tree=new TreeNode;new_tree->node_kind=INVERSE_NODE;new_tree->child[0]=tree;tree = new_tree;
+        }
     }
-    pci->debug_file.Out("End Factor");return tree;
+    pci->debug_file.Out("End Factor");
+    return tree;
 }
 TreeNode* Expr(CompilerInfo* pci,ParseInfo* ppi)
 {
