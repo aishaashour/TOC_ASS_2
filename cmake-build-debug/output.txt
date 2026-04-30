@@ -1,0 +1,51 @@
+Parse Tree:
+inverse
+|--product
+   |--product
+      |--x
+      |--inverse
+         |--y
+   |--z
+
+Reducing to normal form:
+
+product
+|--inverse
+   |--z
+|--inverse
+   |--product
+      |--x
+      |--inverse
+         |--y
+z^-1.(x.y^-1)^-1
+
+product
+|--inverse
+   |--z
+|--product
+   |--inverse
+      |--inverse
+         |--y
+   |--inverse
+      |--x
+z^-1.(y^-1^-1.x^-1)
+
+product
+|--inverse
+   |--z
+|--product
+   |--y
+   |--inverse
+      |--x
+z^-1.(y.x^-1)
+
+Normal Form:
+product
+|--inverse
+   |--z
+|--product
+   |--y
+   |--inverse
+      |--x
+z^-1.(y.x^-1)
+---------------------------------
