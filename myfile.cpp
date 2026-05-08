@@ -2,10 +2,10 @@
 /// Student2: Shaza Ahmed Mohamed ID: 20221079
 /// Student3: Rania Raafat Edwa ID: 20221055
 // Extended BNF (EBNF) Grammar:
-// expr -> factor { '.' factor }
-// factor -> primary { '^' '-' '1' }
-// primary -> '(' expr ')' | 'e' | var
-// var -> 'a'..'z'
+// expr    -> factor { '.' factor }              left associative (product)   -->lowest precedence
+// factor  -> primary { '^' '-' digit }          postfix inverse applied n times
+// primary -> '(' expr ')' | 'e' | var          -->heighest precedence
+// var     -> 'a'..'z'  (single lowercase letter, 'e' is reserved for identity)
 // --------------------------
 // Reduction Rules:
 // R1: e.x->x
@@ -19,7 +19,8 @@
 // R9: (x.y).z->x.(y.z)
 // R10: (x.y)^-1->y^-1.x^-1
 // -------------------------
-// Test 1: ((x.y^-1).z)^-1
+//tests
+// 1: ((x.y^-1).z)^-1
 // 2: x
 // 3: x^-3
 // 4: ((x.y).(z.t))^-1
@@ -95,7 +96,7 @@ const Token symbolic_tokens[]=
     Token(LEFT_PAREN,'('),Token(RIGHT_PAREN,')')
 };
 const int num_symbolic_tokens=sizeof(symbolic_tokens)/sizeof(symbolic_tokens[0]);
-void GetNextToken(CompilerInfo* pci,Token* ptoken)
+void GetNextToken(CompilerInfo* pci,Token* ptoken)      //reads characters 1 by 1
 {
     ptoken->type=ERROR;ptoken->ch=0;char s;
     while(true)
@@ -137,7 +138,7 @@ void Match(CompilerInfo* pci,ParseInfo* ppi,TokenType expected_token_type)
     fflush(pci->debug_file.file);
 }
 TreeNode* Expr(CompilerInfo*,ParseInfo*);
-TreeNode* Primary(CompilerInfo* pci,ParseInfo* ppi)
+TreeNode* Primary(CompilerInfo* pci,ParseInfo* ppi)     //paranthes and e or id
 {
     pci->debug_file.Out("Start Primary");
     if(ppi->next_token.type==IDENTITY)
@@ -165,7 +166,7 @@ TreeNode* Primary(CompilerInfo* pci,ParseInfo* ppi)
     }
     throw 0;
 }
-TreeNode* Factor(CompilerInfo* pci, ParseInfo* ppi)
+TreeNode* Factor(CompilerInfo* pci, ParseInfo* ppi)     //inverse operator
 {
     pci->debug_file.Out("Start Factor");
     TreeNode* tree=Primary(pci, ppi);
@@ -184,7 +185,7 @@ TreeNode* Factor(CompilerInfo* pci, ParseInfo* ppi)
     pci->debug_file.Out("End Factor");
     return tree;
 }
-TreeNode* Expr(CompilerInfo* pci,ParseInfo* ppi)
+TreeNode* Expr(CompilerInfo* pci,ParseInfo* ppi)     //product operator
 {
     pci->debug_file.Out("Start Expr");
     TreeNode* tree=Factor(pci,ppi);
@@ -212,7 +213,7 @@ TreeNode* NewNode(NodeKind kind,char id_ch,TreeNode* c0,TreeNode* c1)
     TreeNode* t=new TreeNode;
     t->node_kind=kind;t->id=id_ch;t->child[0]=c0;t->child[1]=c1;return t;
 }
-TreeNode* CopyTree(TreeNode* node)
+TreeNode* CopyTree(TreeNode* node)      //deep copy
 {
     if(!node)return 0;
     TreeNode* t=new TreeNode;
@@ -226,23 +227,27 @@ void DestroyTree(TreeNode* node)
     for(i=0;i<MAX_CHILDREN;i++)DestroyTree(node->child[i]);
     delete node;
 }
-bool TreesEqual(TreeNode* a,TreeNode* b)
+bool TreesEqual(TreeNode* a,TreeNode* b)        //check if 2 trees equal
 {
-    if(!a&&!b)return true;if(!a||!b)return false;
-    if(a->node_kind!=b->node_kind)return false;if(a->id!=b->id)return false;
-    return TreesEqual(a->child[0],b->child[0])&&TreesEqual(a->child[1],b->child[1]);
+    if(!a&&!b)return true;  //both are null
+    if(!a||!b)return false;    //one null and one not
+    if(a->node_kind!=b->node_kind)return false;     //node type differs
+    if(a->id!=b->id)return false;           //not the same id (variable)
+    return TreesEqual(a->child[0],b->child[0])&&TreesEqual(a->child[1],b->child[1]);    //recursively compare left and right child
 }
 void PrintTreeHelper(TreeNode* node,char* prefix,int is_root,OutFile* out)
 {
-    if(!node)return;char line[256];line[0]='\0';strcat(line,prefix);if(!is_root)strcat(line,"|--");
+    if(!node)return;    //base case: stop recursion if node is null
+    char line[256];line[0]='\0';
+    strcat(line,prefix);if(!is_root)strcat(line,"|--"); //tree branch for child nodes
     switch(node->node_kind)
     {
-        case PRODUCT_NODE:strcat(line,"product");break;
+        case PRODUCT_NODE:strcat(line,"product");break;     //print product for . nodes
         case INVERSE_NODE:strcat(line,"inverse");break;
-        case ID_NODE:{char tmp[2];tmp[0]=node->id;tmp[1]='\0';strcat(line,tmp);}break;
-        case IDENTITY_NODE:strcat(line,"e");break;
+        case ID_NODE:{char tmp[2];tmp[0]=node->id;tmp[1]='\0';strcat(line,tmp);}break;      //convert character to string
+        case IDENTITY_NODE:strcat(line,"e");break;      //print identity element
     }
-    printf("%s\n",line);fflush(NULL);
+    printf("%s\n",line);fflush(NULL);       //print line
     if(out&&out->file){fprintf(out->file,"%s\n",line);fflush(out->file);}
     int prefix_len=strlen(prefix);
     char* child_prefix=new char[prefix_len+10];
@@ -254,21 +259,39 @@ void PrintTreeHelper(TreeNode* node,char* prefix,int is_root,OutFile* out)
 }
 void PrintTree(TreeNode* node,OutFile* out)
 {
-    char prefix[4];prefix[0]='\0';PrintTreeHelper(node,prefix,1,out);
+    char prefix[4];     //empty initial prefix
+    prefix[0]='\0';
+    PrintTreeHelper(node,prefix,1,out);
 }
 bool NeedsParens(TreeNode* node)
 {
-    if(!node)return false;return node->node_kind==PRODUCT_NODE;
+    if(!node)return false;
+    return node->node_kind==PRODUCT_NODE;   //if product node , it needs parentheses
 }
 void TreeToExpr(TreeNode* node,char* buf)
 {
     if(!node)return;
     switch(node->node_kind)
     {
-        case ID_NODE:{char tmp[2];tmp[0]=node->id;tmp[1]='\0';strcat(buf,tmp);break;}
-        case IDENTITY_NODE:{strcat(buf,"e");break;}
-        case INVERSE_NODE:{bool parens=NeedsParens(node->child[0]);if(parens)strcat(buf,"(");
-            TreeToExpr(node->child[0],buf);if(parens)strcat(buf,")");strcat(buf,"^-1");break;}
+        case ID_NODE: {
+            char tmp[2];
+            tmp[0]=node->id;
+            tmp[1]='\0';
+            strcat(buf,tmp);
+            break;
+        }
+        case IDENTITY_NODE: {
+            strcat(buf,"e");
+            break;
+        }
+        case INVERSE_NODE:{
+            bool parens=NeedsParens(node->child[0]);
+            if(parens)strcat(buf,"(");
+            TreeToExpr(node->child[0],buf);
+            if(parens)strcat(buf,")");
+            strcat(buf,"^-1");
+            break;
+        }
         case PRODUCT_NODE:{bool lp=(node->child[0]&&node->child[0]->node_kind==PRODUCT_NODE);
             bool rp=(node->child[1]&&node->child[1]->node_kind==PRODUCT_NODE);
             if(lp)strcat(buf,"(");TreeToExpr(node->child[0],buf);
@@ -281,62 +304,84 @@ void PrintExpr(TreeNode* node,OutFile* out)
     char buf[1024];buf[0]='\0';TreeToExpr(node,buf);printf("%s\n",buf);fflush(NULL);
     if(out && out->file){fprintf(out->file,"%s\n",buf);fflush(out->file);}
 }
-TreeNode* TryR5(TreeNode* node,bool* changed)
+TreeNode* TryR5(TreeNode* node,bool* changed)       //e^-1->e
 {
     if(node->node_kind==INVERSE_NODE&&node->child[0]&&node->child[0]->node_kind==IDENTITY_NODE)
-    {TreeNode* result=NewNode(IDENTITY_NODE,'e',0,0);*changed=true;return result;}return 0;
+    {TreeNode* result=NewNode(IDENTITY_NODE,'e',0,0);
+        *changed=true;
+        return result;
+    }
+    return 0;
 }
-TreeNode* TryR6(TreeNode* node,bool* changed)
+TreeNode* TryR6(TreeNode* node,bool* changed)       //x^-1^-1 -> x
 {
     if(node->node_kind==INVERSE_NODE&&node->child[0]&&node->child[0]->node_kind==INVERSE_NODE)
-    {TreeNode* result=CopyTree(node->child[0]->child[0]);*changed=true;return result;}return 0;
+    {TreeNode* result=CopyTree(node->child[0]->child[0]);       //copy original x
+        *changed=true;
+        return result;
+    }return 0;
 }
-TreeNode* TryR10(TreeNode* node,bool* changed)
+TreeNode* TryR10(TreeNode* node,bool* changed)      //(x.y)^-1 -> y^-1.x^-1
 {
     if(node->node_kind==INVERSE_NODE&&node->child[0]&&node->child[0]->node_kind==PRODUCT_NODE)
     {
-        TreeNode* x=CopyTree(node->child[0]->child[0]);TreeNode* y=CopyTree(node->child[0]->child[1]);
-        TreeNode* yi=NewNode(INVERSE_NODE,0,y,0);
+        TreeNode* x=CopyTree(node->child[0]->child[0]);     //copy left child
+        TreeNode* y=CopyTree(node->child[0]->child[1]);     //copy right child
+        TreeNode* yi=NewNode(INVERSE_NODE,0,y,0);       //inverse node y^-1
         TreeNode* xi=NewNode(INVERSE_NODE,0,x,0);
-        TreeNode* result=NewNode(PRODUCT_NODE,0,yi,xi);
-        *changed=true;return result;
+        TreeNode* result=NewNode(PRODUCT_NODE,0,yi,xi);     //y^-1.x^-1
+        *changed=true;
+        return result;
     }return 0;
 }
-TreeNode* TryR1(TreeNode* node,bool* changed)
+TreeNode* TryR1(TreeNode* node,bool* changed)       //e.x -> x
 {
-    if(node->node_kind==PRODUCT_NODE&&node->child[0]&&node->child[0]->node_kind==IDENTITY_NODE)
-    {TreeNode* result=CopyTree(node->child[1]);*changed=true;return result;}return 0;
+    if(node->node_kind==PRODUCT_NODE&&node->child[0]&&node->child[0]->node_kind==IDENTITY_NODE)     //left child is e
+    {TreeNode* result=CopyTree(node->child[1]); //return the right child
+        *changed=true;
+        return result;
+    }return 0;
 }
-TreeNode* TryR2(TreeNode* node,bool* changed)
+TreeNode* TryR2(TreeNode* node,bool* changed)       //x.e->x
 {
     if(node->node_kind==PRODUCT_NODE&&node->child[1]&&node->child[1]->node_kind==IDENTITY_NODE)
-    {TreeNode* result=CopyTree(node->child[0]);*changed=true;return result;}return 0;
+    {TreeNode* result=CopyTree(node->child[0]);
+        *changed=true;
+        return result;
+    }return 0;
 }
-TreeNode* TryR3(TreeNode* node,bool* changed)
+TreeNode* TryR3(TreeNode* node,bool* changed)       //x^-1.x->e
 {
     if(node->node_kind==PRODUCT_NODE&&node->child[0]&&node->child[0]->node_kind==INVERSE_NODE&&node->child[1])
     {
-        if(TreesEqual(node->child[0]->child[0],node->child[1]))
-        {TreeNode* result=NewNode(IDENTITY_NODE,'e',0,0);*changed=true;return result;}}return 0;
+        if(TreesEqual(node->child[0]->child[0],node->child[1]))     //both expressions are the same
+        {TreeNode* result=NewNode(IDENTITY_NODE,'e',0,0);       //result is e
+            *changed=true;return result;}}return 0;
 }
-TreeNode* TryR4(TreeNode* node,bool* changed)
+TreeNode* TryR4(TreeNode* node,bool* changed)       //x.x^-1->e
 {
     if(node->node_kind==PRODUCT_NODE&&node->child[1]&&node->child[1]->node_kind==INVERSE_NODE&&node->child[0])
     {
         if(TreesEqual(node->child[0],node->child[1]->child[0]))
-        {TreeNode* result=NewNode(IDENTITY_NODE,'e',0,0);*changed=true;return result;}
-    }return 0;
+        {TreeNode* result=NewNode(IDENTITY_NODE,'e',0,0);
+            *changed=true;
+            return result;}
+    }
+    return 0;
 }
-TreeNode* TryR7(TreeNode* node,bool* changed)
+TreeNode* TryR7(TreeNode* node,bool* changed)       //y^-1.(y.z) -> z
 {
     if(node->node_kind==PRODUCT_NODE&&node->child[0]&&node->child[0]->node_kind==INVERSE_NODE&&
     node->child[1]&&node->child[1]->node_kind==PRODUCT_NODE)
     {
         TreeNode* y=node->child[0]->child[0];TreeNode* yz=node->child[1];
-        if(TreesEqual(y,yz->child[0])){TreeNode* result=CopyTree(yz->child[1]);*changed=true;return result;}
+        if(TreesEqual(y,yz->child[0])) {        //first product operand equals y.
+            TreeNode* result=CopyTree(yz->child[1]);*changed=true;
+            return result;
+        }
     }return 0;
 }
-TreeNode* TryR8(TreeNode* node,bool* changed)
+TreeNode* TryR8(TreeNode* node,bool* changed)       //y.(y^-1.z) -> z
 {
     if(node->node_kind==PRODUCT_NODE&&node->child[0]&&node->child[1] && node->child[1]->node_kind==PRODUCT_NODE&&
     node->child[1]->child[0]&&node->child[1]->child[0]->node_kind==INVERSE_NODE)
@@ -345,20 +390,22 @@ TreeNode* TryR8(TreeNode* node,bool* changed)
         if(TreesEqual(y,yz->child[0]->child[0]))
         {TreeNode* result=CopyTree(yz->child[1]);*changed=true;return result;}}return 0;
 }
-TreeNode* TryR9(TreeNode* node,bool* changed)
+TreeNode* TryR9(TreeNode* node,bool* changed)       //(x.y).z->x.(y.z)
 {
     if(node->node_kind==PRODUCT_NODE&&node->child[0]&&node->child[0]->node_kind==PRODUCT_NODE)
     {
-        TreeNode* x=CopyTree(node->child[0]->child[0]);TreeNode* y=CopyTree(node->child[0]->child[1]);
-        TreeNode* z=CopyTree(node->child[1]);
-        TreeNode* yz=NewNode(PRODUCT_NODE,0,y,z);
-        TreeNode* result=NewNode(PRODUCT_NODE,0,x,yz);
-        *changed=true;return result;
+        TreeNode* x=CopyTree(node->child[0]->child[0]);     //extract x
+        TreeNode* y=CopyTree(node->child[0]->child[1]);     //y
+        TreeNode* z=CopyTree(node->child[1]);               //z
+        TreeNode* yz=NewNode(PRODUCT_NODE,0,y,z);       //(y.z)
+        TreeNode* result=NewNode(PRODUCT_NODE,0,x,yz);      //x.(y.z)
+        *changed=true;
+        return result;
     }return 0;
 }
 bool ApplyOneRule(TreeNode* node,TreeNode** replacement)
 {
-    if(!node)return false;
+    if(!node)return false;      //node is null
     bool dummy=false;
     TreeNode* result=0;
     if(!result&&node->node_kind==INVERSE_NODE)result=TryR5(node,&dummy);
@@ -371,15 +418,22 @@ bool ApplyOneRule(TreeNode* node,TreeNode** replacement)
     if(!result&&node->node_kind==PRODUCT_NODE)result=TryR7(node,&dummy);
     if(!result&&node->node_kind==PRODUCT_NODE)result=TryR8(node,&dummy);
     if(!result&&node->node_kind==PRODUCT_NODE)result=TryR9(node,&dummy);
-    if(result){*replacement=result;return true;}
-    TreeNode* child_replacement=0;
-    if(ApplyOneRule(node->child[0],&child_replacement))
-    {
-        if(child_replacement){DestroyTree(node->child[0]);node->child[0]=child_replacement;}return true;
+    if(result){*replacement=result;
+        return true;        //reduction occurred
     }
-    if(ApplyOneRule(node->child[1],&child_replacement))
+    TreeNode* child_replacement=0;
+    if(ApplyOneRule(node->child[0],&child_replacement))     //left tree reduction
     {
-        if(child_replacement){DestroyTree(node->child[1]);node->child[1]=child_replacement;}return true;
+        if(child_replacement){
+            DestroyTree(node->child[0]);
+            node->child[0]=child_replacement;}return true;
+    }
+    if(ApplyOneRule(node->child[1],&child_replacement))     //right tree reduction
+    {
+        if(child_replacement){
+            DestroyTree(node->child[1]);        //delete old subtree
+            node->child[1]=child_replacement;       //replace with simplified tree
+        }return true;
     }return false;
 }
 TreeNode* Reduce(TreeNode* tree,OutFile* out)
@@ -387,12 +441,15 @@ TreeNode* Reduce(TreeNode* tree,OutFile* out)
     while(true)
     {
         TreeNode* replacement=0;
-        if(!ApplyOneRule(tree,&replacement))break;
+        if(!ApplyOneRule(tree,&replacement))    //stop when no rules applied
+            break;
         if(replacement){DestroyTree(tree);tree=replacement;}
         printf("\n");fflush(NULL);
-        if(out && out->file){fprintf(out->file,"\n");fflush(out->file);}
-        PrintTree(tree,out);
-        PrintExpr(tree,out);
+        if(out && out->file) {
+            fprintf(out->file,"\n");fflush(out->file);
+        }
+        PrintTree(tree,out);        //print updated tree
+        PrintExpr(tree,out);        //print updated expression
     }return tree;
 }
 void StartCompiler(CompilerInfo* pci)

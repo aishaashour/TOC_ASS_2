@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/Users/applecare/Desktop/TOC_ASS_2/cmake-build-debug",
+  "command": "/usr/bin/c++   -g -std=gnu++17 -arch arm64 -fcolor-diagnostics -o CMakeFiles/TOC_ASS_2.dir/myfile.cpp.o -c /Users/applecare/Desktop/TOC_ASS_2/myfile.cpp",
+  "file": "/Users/applecare/Desktop/TOC_ASS_2/myfile.cpp",
+  "output": "CMakeFiles/TOC_ASS_2.dir/myfile.cpp.o"
+},
+{
+  "directory": "/Users/applecare/Desktop/TOC_ASS_2/cmake-build-debug",
+  "command": "/usr/bin/c++   -g -std=gnu++17 -arch arm64 -fcolor-diagnostics -o CMakeFiles/TOC_ASS_2.dir/main.cpp.o -c /Users/applecare/Desktop/TOC_ASS_2/main.cpp",
+  "file": "/Users/applecare/Desktop/TOC_ASS_2/main.cpp",
+  "output": "CMakeFiles/TOC_ASS_2.dir/main.cpp.o"
+}
+]
